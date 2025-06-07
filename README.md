@@ -10,4 +10,5 @@ bile responsiveness and performance.
 • Deployed the application on Vercel with a backend powered by Node.js and TypeScript
 for type-safe development
 
-Tech Stack: MERN Stack, Next.js, Vercel, TypeScript, Tailwind CSS
+## Tech Stack
+ MERN Stack, Next.js, Vercel, TypeScript, Tailwind CSS

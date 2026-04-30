@@ -55,8 +55,8 @@ export async function POST (request: NextRequest,req:NextApiRequest,res:NextApiR
        const rawextraIngredientPrices =  data.get('extraIngredientPrices')
        const file =  data.get('file')
        
-  const size =JSON.parse(JSON.stringify(rawsize) ) 
-  const extraIngredientPrices =JSON.parse( JSON.stringify(rawextraIngredientPrices) )
+       const size = JSON.parse(rawsize as string);
+       const extraIngredientPrices = JSON.parse(rawextraIngredientPrices as string);
 
 
      

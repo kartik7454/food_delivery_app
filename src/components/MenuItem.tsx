@@ -1,44 +1,46 @@
 
-import { FC } from 'react'
-import { useState,useEffect } from "react"
+import { FC } from "react";
 
-
-interface pizzaItemProps {
-  menuitem:Menuitem
-  addtocart:Function
+interface PizzaItemProps {
+  menuitem: Menuitem;
+  addtocart: (item: Menuitem) => void;
 }
 
-const PizzaItem: FC<pizzaItemProps> = ({menuitem,addtocart}) => {
+const PizzaItem: FC<PizzaItemProps> = ({ menuitem, addtocart }) => {
+  const imageSrc = `/images/${menuitem.image}`;
 
+  return (
+    <article className="group my-10 mb-11 flex h-[26rem] w-96 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
+      <div className="relative">
+        <img
+          className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          src={imageSrc}
+          alt={menuitem.title}
+          loading="lazy"
+        />
+        <div className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur">
+          ${menuitem.price}
+        </div>
+      </div>
 
-  
+      <div className="flex flex-1 flex-col p-5">
+        <h2 className="text-xl font-bold tracking-tight text-slate-900">{menuitem.title}</h2>
 
-  function handelclick(menuitem:Menuitem){
-addtocart(menuitem)
+        <p className="mt-2 flex-1 break-words text-sm leading-6 text-slate-600 line-clamp-3">
+          {menuitem.discription}
+        </p>
 
-  }
-  return(
-  <div className="bg-gray-200 h-96 w-96 my-10 ml-14 mb-11 inline-grid rounded-xl">
-    
-    <div className="ml-8 mt-5 rounded-lg">
-      <img
-    className='h-40 w-80 object-cover rounded-lg'
-  src= {"/images/"+menuitem.image} 
- 
-  alt={"img"}
-  
-  
-  
-  /></div>
-  <h1 className='text-center font-bold text-lg font-sans italic'>{menuitem.title}</h1>
- 
-  <p className='ml-10  w-80 break-words text-base font-medium bg-slate-1200 min-h-20 max-h-20 mb-5' >{menuitem.discription}</p>
-  <button type="button" onClick={ ()=>{handelclick(menuitem)} } className=" h-10 focus:outline-none ml-3 mb-3 text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-3xl text-sm px-5  me-2  dark:bg-red-500 dark:hover:bg-red-700 dark:focus:ring-red-900">Add to Cart ${menuitem.price}</button>
-  </div>
+        <button
+          type="button"
+          onClick={() => addtocart(menuitem)}
+          className="mt-5 h-11 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:from-red-700 hover:to-orange-600 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-red-200"
+          aria-label={`Add ${menuitem.title} to cart`}
+        >
+          Add to Cart
+        </button>
+      </div>
+    </article>
+  );
+};
 
-
-  
-  )
-}
-
-export default PizzaItem
+export default PizzaItem;

@@ -61,13 +61,15 @@ export async function PATCH (request: NextRequest,Props:Props){
         const title =  data.get('title')
        const discription =  data.get('discription')
        const image =  data.get('image')
-       const price =  data.get('price')
+       const price =   Number(data.get('price'))
         
        const type =  data.get('type')
        const rawsize =  data.get('size')
        const rawextraIngredientPrices =  data.get('extraIngredientPrices')
-       const size =JSON.parse(JSON.stringify(rawsize) ) 
-  const extraIngredientPrices =JSON.parse( JSON.stringify(rawextraIngredientPrices) )
+       const size = rawsize ? JSON.parse(rawsize.toString()) : []
+       const extraIngredientPrices = rawextraIngredientPrices
+         ? JSON.parse(rawextraIngredientPrices.toString())
+         : []
        
 
   const event =  await menuItem.findOneAndUpdate({_id:id},{title:title,discription:discription,image:image,price:price,type:type,size:size,extraIngredientPrices:extraIngredientPrices})

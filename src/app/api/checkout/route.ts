@@ -1,90 +1,111 @@
 import { NextRequest } from "next/server";
-import cartItem from "../../../lib/cart";
-import {Order} from "../../../lib/orders";
-import { authOptions } from "@/utils/authoptions"
-var mongoose = require('mongoose')
+import { Order } from "../../../lib/orders";
+import { authOptions } from "@/utils/authoptions";
+import { getServerSession } from "next-auth";
+import { connectToDB } from "@/lib/connectDb";
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
+export async function POST(request: NextRequest) {
+  try {
+    // ✅ 1. CONNECT DB FIRST (CRITICAL FIX)
+    await connectToDB();
 
-import {getServerSession} from "next-auth";
+    // ✅ 2. Parse request
+    const { cartitem, address } = await request.json();
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-function myFunc(total:number, num:number) {
-        return total + num ;
+    // ✅ 3. Get user session
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401 }
+      );
+    }
+
+    const postalcode = Number(session?.user?.postalcode);
+    const email = session?.user?.email;
+    const phonenumber = Number(session?.user?.phonenumber);
+    const name = session?.user?.name;
+
+    // ✅ 4. Create order
+    const orderDoc = await Order.create({
+      email,
+      name,
+      postalcode,
+      address,
+      phonenumber,
+      cartitem,
+      stripeid: "",
+    });
+
+    // ✅ 5. Prepare Stripe items
+    const stripeLineItems = cartitem.map((item: any) => {
+      const price = Number(item.total);
+    
+      // 🚨 HARD VALIDATION (this is what you're missing)
+      if (!price || isNaN(price)) {
+        throw new Error(`Invalid price for item: ${JSON.stringify(item)}`);
       }
-export async function POST(request:NextRequest) {
-  // mongoose.connect(process.env.MONGO_URL);
-  
-  const {cartitem, address} = await request.json();
-
-  
-  const session1 = await getServerSession(authOptions) as Session;
- const postalcode = Number( session1?.user?.postalcode);
-  const email = session1?.user?.email;
-  const phonenumber =   Number(session1?.user?.phonenumber);
-  const name = session1?.user?.name;
-  
-  
-  const orderDoc = await Order.create({
-    email,
-    name,
-    postalcode,
-    address,
-    phonenumber,
-    cartitem,
-    stripeid:"",
     
-  });
-
-  const stripeLineItems = []; 
-  
-  for (const cartProduct of cartitem) {
-         
-      
-      
-     const productPrice = Number(cartProduct.total)
-   
-    
-
-
-
-
-    const productName = cartProduct.name;
-    stripeLineItems.push({
-      quantity: 1,
-      price_data: {
-        currency: 'USD',
-        product_data: {
-          name: "ssss",
+      return {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: item.name || "Product",
+          },
+          unit_amount: Math.round(price * 100), // ✅ always integer
         },
-        unit_amount: productPrice * 100,
+      };
+    });
+
+    // ✅ 6. Create Stripe session
+    const stripeSession = await stripe.checkout.sessions.create({
+      line_items: stripeLineItems,
+      mode: "payment",
+      customer_email: email,
+      success_url:
+        process.env.NEXTAUTH_URL +
+        "/dashboard/orders/" +
+        orderDoc._id.toString() +
+        "?clear-cart=1",
+      cancel_url:
+        process.env.NEXTAUTH_URL +
+        "/dashboard/orders/" +
+        orderDoc._id.toString(),
+      metadata: {
+        orderId: orderDoc._id.toString(),
       },
-    })
+      payment_intent_data: {
+        metadata: {
+          orderId: orderDoc._id.toString(),
+        },
+      },
+    });
+
+    // ✅ 7. Update order with Stripe ID (FIXED ObjectId misuse)
+    await Order.findByIdAndUpdate(orderDoc._id, {
+      stripeid: stripeSession.id,
+    });
+
+    // ✅ 8. Return response
+    return Response.json({
+      url: stripeSession.url,
+      orderId: orderDoc._id,
+    });
+  } catch (error: any) {
+    console.error("❌ ERROR:", error);
+
+    return new Response(
+      JSON.stringify({
+        error: error?.message || "Something went wrong",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
-
-  const stripeSession = await stripe.checkout.sessions.create({
-    line_items: stripeLineItems,
-    mode: 'payment',
-  
-    customer_email: email,
-    success_url: process.env.NEXTAUTH_URL + 'dashboard/orders/' + orderDoc._id.toString() + '?clear-cart=1',
-    cancel_url: process.env.NEXTAUTH_URL + 'dashboard/orders/' + orderDoc._id.toString(),
-    metadata: {orderId:orderDoc._id.toString()},
-    payment_intent_data: {
-      metadata:{orderId:orderDoc._id.toString()},
-      
-    },
-    
-  });
-  var objectId =await  new mongoose.Types.ObjectId(orderDoc._id)
-  const orderDoc2 = await Order.findByIdAndUpdate(objectId,{
-    stripeid:stripeSession.id
-  })
-  
-
-  // const id = session?.user?.id
-  // var objectId = new mongoose.Types.ObjectId(id);
-  // const event =  await cartItem.deleteMany({key:objectId})
-
-  return Response.json([stripeSession.url,orderDoc._id]);
 }

@@ -56,14 +56,17 @@ console.log(menuitem)
 {
 
 menuitem.length > 0 ? (
-  menuitem.filter((item,index)=>{ return index<3}).map((item)=>{
-    
-    return(<PizzaItem
-    menuitem={item}
-    addtocart={addtocart}
-    />)
-    
-  })
+  <div className="grid justify-items-center gap-6 md:grid-cols-2 lg:grid-cols-3">
+    {menuitem.filter((item,index)=>{ return index<3}).map((item)=>{
+      
+      return(<PizzaItem
+      key={item._id}
+      menuitem={item}
+      addtocart={addtocart}
+      />)
+      
+    })}
+  </div>
   ):null}
   
 <div>
